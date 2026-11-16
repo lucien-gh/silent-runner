@@ -40,7 +40,27 @@ cpack --config build/release/CPackConfig.cmake -B build/packages
 
 预设不会自行初始化 MSVC。Release 静态链接 MSVC 运行库，无第三方运行时依赖；Debug 不用于分发。
 
-输出：`build/release/SilentRunner.exe` 和 `build/packages/SilentRunner-0.1.0-windows-x64.zip`。
+输出：`build/release/SilentRunner.exe` 和 `build/packages/SilentRunner-v0.1.0.zip`。
+
+## GitHub Actions 发布
+
+工作流 `.github/workflows/release.yml` 在推送 `v主版本.次版本.修订号` 标签时触发，例如 `v0.1.0`。它在 Windows x64 环境中加载 MSVC，执行 Release 配置、编译、测试和 ZIP 打包，全部成功后创建并发布 GitHub Release，附带：
+
+- `SilentRunner.exe`：可直接使用的程序。
+- `SilentRunner-v{Version}.zip`：包含程序、README 和使用及验收文档的压缩包，例如 `SilentRunner-v0.1.0.zip`。
+
+发布前，将 `CMakeLists.txt` 中 `project(... VERSION ...)` 的版本号更新为目标版本，并同步文档中的版本示例。标签必须与 CMake 版本一致，否则工作流失败并停止发布。将代码及工作流提交、推送到 `main` 后，再创建并推送对应标签：
+
+```powershell
+# 首次发布示例；后续版本替换为对应版本号，不要复用已有标签
+git push origin main
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+在 GitHub 仓库的 **Actions → Build and release** 中查看进度，完成后到 **Releases** 下载附件。工作流使用 GitHub 自动提供的 `GITHUB_TOKEN`（`contents: write` 权限），无需另建个人访问令牌；仓库需要启用 GitHub Actions。
+
+构建、测试或打包失败时不会创建 Release，修复后用新版本标签发布。上传完成前 Release 保持草稿；若最后发布步骤失败，可检查并手动发布保留的草稿。已有同名 Release 时工作流会报错，不会覆盖已发布附件。
 
 ## 图标素材
 

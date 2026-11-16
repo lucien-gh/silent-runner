@@ -1,0 +1,65 @@
+name: Build and release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build, test, and package Windows x64
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+$') {
+            throw 'Release tag must use vMAJOR.MINOR.PATCH, for example v0.1.0.'
+          }
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw 'MSVC x64 tools were not found.' }
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation
+
+          cmake --preset release
+          if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed.' }
+          $versionLine = Get-Content build/release/CMakeCache.txt | Where-Object { $_ -match '^CMAKE_PROJECT_VERSION:STATIC=' }
+          $version = $versionLine -replace '^CMAKE_PROJECT_VERSION:STATIC=', ''
+          if ($env:RELEASE_TAG -cne "v$version") {
+            throw "Tag $env:RELEASE_TAG does not match CMake project version v$version."
+          }
+          cmake --build --preset release
+          if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
+          ctest --preset release
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+          cpack --config build/release/CPackConfig.cmake -B build/packages
+          if ($LASTEXITCODE -ne 0) { throw 'Packaging failed.' }
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = 'build/release/SilentRunner.exe'
+          $zip = "build/packages/SilentRunner-$env:RELEASE_TAG.zip"
+          if (!(Test-Path $exe) -or !(Test-Path $zip)) { throw 'Release assets are missing.' }
+          gh release create $env:RELEASE_TAG $exe $zip --verify-tag --draft --title "SilentRunner $env:RELEASE_TAG" --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw 'Creating the draft release failed. Check for an existing release before retrying.' }
+          gh release edit $env:RELEASE_TAG --draft=false
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing failed; the draft release is retained for inspection.' }
