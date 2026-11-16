@@ -219,12 +219,20 @@ int wmain(int argc, wchar_t** argv) {
         std::ifstream ps_report(destination, std::ios::binary);
         std::string ps_content((std::istreambuf_iterator<char>(ps_report)), std::istreambuf_iterator<char>());
         ps_report.close();
-        const auto expected_cwd = ps_script.parent_path().wstring();
-        const int utf8_size = WideCharToMultiByte(CP_UTF8, 0, expected_cwd.c_str(), -1, nullptr, 0, nullptr, nullptr);
-        std::string expected_utf8(static_cast<size_t>(utf8_size), '\0');
-        WideCharToMultiByte(CP_UTF8, 0, expected_cwd.c_str(), -1, expected_utf8.data(), utf8_size, nullptr, nullptr);
-        expected_utf8.pop_back();
-        check(ps_content.find(expected_utf8) != std::string::npos, "PowerShell runtime cwd");
+        const auto separator = ps_content.find('|');
+        check(separator != std::string::npos, "PowerShell report missing cwd field");
+        const auto cwd_bytes = ps_content.substr(separator + 1);
+        const fs::path actual_cwd(std::u8string(cwd_bytes.begin(), cwd_bytes.end()));
+        const auto expected_cwd = ps_script.parent_path();
+        // PowerShell may expand an inherited 8.3 path (RUNNER~1) to its long name.
+        // Compare directory identity rather than the spelling of the paths.
+        std::error_code cwd_error;
+        const bool same_cwd = fs::equivalent(actual_cwd, expected_cwd, cwd_error);
+        if (!same_cwd || cwd_error) {
+            std::wcerr << L"PowerShell cwd: actual=" << actual_cwd.wstring()
+                       << L", expected=" << expected_cwd.wstring() << L"\n";
+        }
+        check(same_cwd && !cwd_error, "PowerShell runtime cwd");
         check(prepare_launch(parse_arguments({ps_script.wstring()})).cwd == ps_script.parent_path().wstring(), "PowerShell script directory is default cwd");
         const auto ps_override = prepare_launch(parse_arguments({ps_script.wstring(), L"--cwd", folder.wstring()}));
         check(ps_override.cwd == folder.wstring(), "PowerShell explicit cwd override");
