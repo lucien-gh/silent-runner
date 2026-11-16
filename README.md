@@ -42,6 +42,24 @@ cpack --config build/release/CPackConfig.cmake -B build/packages
 
 输出：`build/release/SilentRunner.exe` 和 `build/packages/SilentRunner-0.1.0-windows-x64.zip`。
 
+## 图标素材
+
+`img/` 保存同一图标的不同格式、尺寸及 Windows 场景素材：
+
+| 文件或目录 | 用途 |
+| --- | --- |
+| `img/ico/Sudo.ico` | Windows EXE 和快捷方式图标，已通过 `src/SilentRunner.rc` 接入 `SilentRunner.exe` 的构建。 |
+| `img/svg/ic_fluent_Sudo.svg` | 矢量源图，适合 README、项目主页和后续缩放导出。 |
+| `img/svg/_16.png` ～ `_256.png` | 不同像素尺寸的 PNG，适合文档插图、按钮和工具栏。 |
+| `img/Windows/AppList.*.png` | Windows 应用列表图标素材。 |
+| `img/Windows/StoreLogo.*.png`、`StoreDisplay-*.png` | Microsoft Store 相关图标素材。 |
+| `img/Windows/SplashScreen.*.png` | 应用启动画面素材；当前隐藏启动器不使用启动画面。 |
+| `img/Windows/WideTile.*.png` | Windows 宽磁贴素材。 |
+
+文件名中的 `scale-100/200/400` 表示不同显示缩放比例，`targetsize-16/32/...` 表示具体像素尺寸，`theme-light/dark` 表示浅色或深色主题版本。
+
+当前仅将 ICO 接入 EXE 构建，其余图片作为备用素材保留，不会因放入目录就自动生效。未来制作 MSIX 包或发布到 Microsoft Store 时，可按对应清单和发布要求选用 Windows 素材。
+
 ## 说明
 
 - [完整使用说明](docs/usage.md)。

@@ -1,0 +1,3 @@
+#include <windows.h>
+
+IDI_SILENT_RUNNER ICON "..\\img\\ico\\Sudo.ico"
