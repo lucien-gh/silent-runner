@@ -15,24 +15,24 @@ Windows 隐藏进程启动工具，版本 **0.1.0**，交付文件 **SilentRunne
 
 ## 构建与测试
 
-安装 MSVC x64 编译工具、Windows SDK、CMake 3.25+、Ninja。在 **x64 Native Tools Command Prompt** 中切换到项目根目录后运行以下命令；也可使用已加载 Visual Studio x64 编译环境的 PowerShell 7（将下面的 `REM` 注释改为 `#`）：
+安装 MSVC x64 编译工具、Windows SDK、CMake 3.25+、Ninja。在 **x64 Native Tools Command Prompt** 中切换到项目根目录后运行以下命令；也可使用已加载 Visual Studio x64 编译环境的 PowerShell 7（将下面的 `#` 注释改为 `#`）：
 
-```cmd
-REM 配置 Debug：检测编译工具链，并在 build/debug 中生成 Ninja 构建文件
+```shell
+# 配置 Debug：检测编译工具链，并在 build/debug 中生成 Ninja 构建文件
 cmake --preset debug
-REM 编译 Debug 程序和测试工具，供开发调试使用
+# 编译 Debug 程序和测试工具，供开发调试使用
 cmake --build --preset debug
-REM 运行 Debug 测试；失败时显示测试输出
+# 运行 Debug 测试；失败时显示测试输出
 ctest --preset debug
 
-REM 配置 Release：在 build/release 中生成用于发布的构建文件
+# 配置 Release：在 build/release 中生成用于发布的构建文件
 cmake --preset release
-REM 编译 Release 程序和测试工具，生成 build/release/SilentRunner.exe
+# 编译 Release 程序和测试工具，生成 build/release/SilentRunner.exe
 cmake --build --preset release
-REM 运行 Release 测试，验证发布构建；失败时显示测试输出
+# 运行 Release 测试，验证发布构建；失败时显示测试输出
 ctest --preset release
 
-REM Release 构建并通过测试后，将程序及文档打包为 ZIP，输出到 build/packages
+# Release 构建并通过测试后，将程序及文档打包为 ZIP，输出到 build/packages
 cpack --config build/release/CPackConfig.cmake -B build/packages
 ```
 
